@@ -1,4 +1,6 @@
 #include "graph.h"
+#include <queue>
+#include <climits>
 
 // Adds a new vertex if it doesn't already exist
 void Graph::addVertex(const std::string& name) {
@@ -37,4 +39,87 @@ void Graph::printGraph() const {
 // Returns the total number of unique vertices stored
 size_t Graph::getVerticesCount() const {
     return vertices.size();
+}
+
+int Graph::getDegree(const std::string& name) const {
+    auto it = vertices.find(name);
+    
+    if (it != vertices.end()) {
+        return it->second.edges.size();
+    }
+    
+    return 0;
+}
+
+std::vector<std::string> Graph::getVertexNames() const {
+    std::vector<std::string> names;
+    
+    for (const auto& pair : vertices) {
+        names.push_back(pair.first);
+    }
+    
+    return names;
+}
+
+int Graph::getTotalWeight() const {
+    int total = 0;
+    
+    for (const auto& pair : vertices) {
+        for (const auto& edge : pair.second.edges) {
+            total += edge.weight;
+        }
+    }
+    
+    return total / 2;
+}
+
+std::vector<std::string> Graph::getOddVertices() const {
+    std::vector<std::string> odd_nodes;
+    for (const auto& pair : vertices) {
+        if (pair.second.edges.size() % 2 != 0) {
+            odd_nodes.push_back(pair.first);
+        }
+    }
+    return odd_nodes;
+}
+
+std::unordered_map<std::string, int> Graph::dijkstra_algorithm(const std::string& start) const {
+    std::unordered_map<std::string, int> distances;
+    
+    // 1. Initialize all distances to "infinity"
+    for (const auto& pair : vertices) {
+        distances[pair.first] = INT_MAX;
+    }
+    distances[start] = 0; // The distance to the starting point itself is 0
+
+    // 2. Create the classic C++ Min-Heap: stores pairs of (distance, node_name)
+    // We use greater<> so that the shortest distance is always at the top
+    std::priority_queue<std::pair<int, std::string>, 
+                        std::vector<std::pair<int, std::string>>, 
+                        std::greater<std::pair<int, std::string>>> pq;
+
+    pq.push({0, start});
+
+    // 3. Main Dijkstra loop
+    while (!pq.empty()) {
+        int current_dist = pq.top().first;
+        std::string current_vertex = pq.top().second;
+        pq.pop();
+
+        // If we found this node in the queue with an old/greater distance, we ignore it
+        if (current_dist > distances[current_vertex]) continue;
+
+        // 4. Explore all neighboring streets (edges)
+        for (const auto& edge : vertices.at(current_vertex).edges) {
+            int new_dist = current_dist + edge.weight;
+            
+            // If the new shortcut is better than the known distance, update it!
+            if (new_dist < distances[edge.to]) {
+                distances[edge.to] = new_dist;
+                pq.push({new_dist, edge.to});
+            }
+        }
+    }
+    
+    return distances;
 }
