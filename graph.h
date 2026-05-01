@@ -35,6 +35,16 @@ public:
 
     // Getters
     size_t getVerticesCount() const;
+
+    int getDegree(const std::string& name) const;
+
+    std::vector<std::string> getVertexNames() const;
+
+    int getTotalWeight() const;
+
+    std::vector<std::string> getOddVertices() const;
+
+    std::unordered_map<std::string, int> dijkstra_algorithm(const std::string& start) const;
 };
 
 #endif // GRAPH_H
