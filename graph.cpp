@@ -83,7 +83,7 @@ std::vector<std::string> Graph::getOddVertices() const {
     return odd_nodes;
 }
 
-std::unordered_map<std::string, int> Graph::dijkstra_algorithm(const std::string& start) const {
+std::unordered_map<std::string, int> Graph::dijkstra_priority_queue(const std::string& start) const {
     std::unordered_map<std::string, int> distances;
     
     // 1. Initialize all distances to "infinity"
@@ -117,6 +117,52 @@ std::unordered_map<std::string, int> Graph::dijkstra_algorithm(const std::string
             if (new_dist < distances[edge.to]) {
                 distances[edge.to] = new_dist;
                 pq.push({new_dist, edge.to});
+            }
+        }
+    }
+    
+    return distances;
+}
+
+std::unordered_map<std::string, int> Graph::dijkstra_fibonacci_heap(const std::string& start) const {
+    std::unordered_map<std::string, int> distances;
+    FibonacciHeap fh; // Instantiate our logistic center
+    
+    // 1. Initialize distances and insert ALL nodes into the Fibonacci Heap
+    for (const auto& pair : vertices) {
+        if (pair.first == start) {
+            distances[pair.first] = 0;
+            fh.insert(pair.first, 0);
+        } else {
+            distances[pair.first] = INT_MAX;
+            fh.insert(pair.first, INT_MAX);
+        }
+    }
+
+    // 2. Main Loop
+    while (!fh.is_empty()) {
+        // Extracting the minimum triggers the Fibonacci internal consolidation
+        auto min_pair = fh.extract_min();
+        std::string current_vertex = min_pair.first;
+        int current_dist = min_pair.second;
+
+        // If the shortest distance is infinity, the remaining nodes are unreachable
+        if (current_dist == INT_MAX) break;
+
+        // 3. Explore neighboring streets
+        for (const auto& edge : vertices.at(current_vertex).edges) {
+            // Prevent mathematical overflow when adding to INT_MAX
+            if (current_dist != INT_MAX) {
+                int new_dist = current_dist + edge.weight;
+                
+                // 4. If we find a shortcut, use the magic Decrease Key operation!
+                if (new_dist < distances[edge.to]) {
+                    distances[edge.to] = new_dist;
+                    
+                    // Instead of pushing a new duplicated node (like priority_queue does),
+                    // Fibonacci just updates the existing one and moves it in O(1) time!
+                    fh.decrease_key(edge.to, new_dist); 
+                }
             }
         }
     }

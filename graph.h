@@ -6,6 +6,8 @@
 #include <unordered_map>
 #include <iostream>
 
+#include "fibonacci_heap.h"
+
 // Represents a connection to another vertex
 struct Edge {
     std::string to; // Name of the destination vertex
@@ -44,7 +46,9 @@ public:
 
     std::vector<std::string> getOddVertices() const;
 
-    std::unordered_map<std::string, int> dijkstra_algorithm(const std::string& start) const;
+    std::unordered_map<std::string, int> dijkstra_priority_queue(const std::string& start) const;
+
+    std::unordered_map<std::string, int> dijkstra_fibonacci_heap(const std::string& start) const;
 };
 
 #endif // GRAPH_H

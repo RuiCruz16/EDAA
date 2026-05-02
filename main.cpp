@@ -3,11 +3,51 @@
 #include <string>
 #include <unordered_map>
 #include <climits>
+#include <chrono>
+#include <fstream>
+#include <cstdlib>
+#include <ctime>
 #include "graph.h"
 #include "reader.h"
 
 using namespace std;
+using namespace std::chrono;
 using namespace GraphReader;
+
+// ---------------------------------------------------------
+// Graph Generator for Benchmarking (Dense Complete Graph)
+// ---------------------------------------------------------
+void generate_graph(const string& filename, int num_nodes = 2000) {
+    ofstream file(filename);
+    if (!file.is_open()) {
+        cerr << "Error: Could not create the file " << filename << "!\n";
+        return;
+    }
+
+    // Calculate the exact number of edges for a Complete Graph (N * (N-1) / 2)
+    long long edges = (long long)num_nodes * (num_nodes - 1) / 2;
+    
+    cout << "\n--- Generating Graph ---\n";
+    cout << "Generating " << num_nodes << " nodes and " << edges << " edges...\n";
+
+    file << num_nodes << " " << edges << "\n";
+
+    // Seed the random number generator
+    srand(time(0));
+    
+    // Generate the connections (every node connects to every other node)
+    for(int i = 0; i < num_nodes; i++) {
+        for(int j = i + 1; j < num_nodes; j++) {
+            // Random weight between 1 and 50
+            int weight = (rand() % 50) + 1;
+            file << i << " " << j << " " << weight << "\n";
+        }
+    }
+
+    file.close();
+    cout << "Done! File '" << filename << "' generated successfully!\n";
+    cout << "-----------------------------------\n\n";
+}
 
 // ---------------------------------------------------------
 // Recursive Brute Force to find the Minimum Perfect Matching
@@ -53,7 +93,7 @@ void calculate_euler(const Graph& g) {
 // ---------------------------------------------------------
 // Scenario 2: Graph with Odd Vertices (General Chinese Postman)
 // ---------------------------------------------------------
-void calculate_non_eulerian(const Graph& g) {
+void calculate_non_eulerian(const Graph& g, bool use_fibonacci_heap) {
     vector<string> odd_nodes = g.getOddVertices();
     cout << "\n--- Chinese Postman Strategy ---\n";
     cout << "Found " << odd_nodes.size() << " odd-degree vertices.\n";
@@ -63,11 +103,24 @@ void calculate_non_eulerian(const Graph& g) {
     // Matrix to store distances between all odd nodes
     unordered_map<string, unordered_map<string, int>> odd_distances;
 
-    cout << "Calculating shortest paths between all odd nodes...\n";
+    if (use_fibonacci_heap) {
+        cout << "Calculating shortest paths using: FIBONACCI HEAP...\n";
+    } else {
+        cout << "Calculating shortest paths using: PRIORITY QUEUE...\n";
+    }
+
+    auto start_time = high_resolution_clock::now();
     
     // Run Dijkstra with EACH odd node as the starting point
     for (const string& start_node : odd_nodes) {
-        unordered_map<string, int> dists = g.dijkstra_algorithm(start_node);
+        unordered_map<string, int> dists;
+        
+        // Choose the engine based on the boolean flag
+        if (use_fibonacci_heap) {
+            dists = g.dijkstra_fibonacci_heap(start_node);
+        } else {
+            dists = g.dijkstra_priority_queue(start_node);
+        }
         
         // Store the distances to all OTHER odd nodes
         for (const string& target_node : odd_nodes) {
@@ -76,6 +129,14 @@ void calculate_non_eulerian(const Graph& g) {
             }
         }
     }
+
+    auto end_time = high_resolution_clock::now();
+
+    // Calculate the duration
+    auto duration = duration_cast<microseconds>(end_time - start_time);
+    double time_in_seconds = duration.count() / 1000000.0;
+    
+    cout << "-> [BENCHMARK] Dijkstra phase took: " << time_in_seconds << " seconds.\n";
 
     cout << "\nCalculating Perfect Matching...\n";
 
@@ -93,8 +154,6 @@ void calculate_non_eulerian(const Graph& g) {
     cout << "-------------------------------------------\n";
     cout << "FINAL POSTMAN COST: " << final_cost << "\n";
     cout << "-------------------------------------------\n";
-
-    // TODO: Implement Fibonacci Heap optimization inside Dijkstra
 }
 
 // ---------------------------------------------------------
@@ -102,7 +161,7 @@ void calculate_non_eulerian(const Graph& g) {
 // ---------------------------------------------------------
 int main() {
     Graph g;
-    string filename = "graphs/large_graph_1.txt";
+    string filename = "graphs/medium_graph_1.txt";
 
     if (!loadFromFile(filename, g)) {
         cerr << "Error: Failed to load the graph." << "\n";
@@ -122,12 +181,14 @@ int main() {
         }
     }
 
+    bool use_fibonacci_heap = false;
+
     if (is_euler_circuit) {
         cout << "Status: Eulerian Circuit (All vertices have an even degree).\n";
         calculate_euler(g);
     } else {
         cout << "Status: NOT an Eulerian Circuit (Odd-degree vertices detected).\n";
-        calculate_non_eulerian(g);
+        calculate_non_eulerian(g, use_fibonacci_heap);
     }
 
     return 0;
