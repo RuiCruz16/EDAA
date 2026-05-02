@@ -31,7 +31,7 @@ tar -xzf blossom5-v2.05.src.tar.gz
 mv blossom5-v2.05.src blossom5
 ```
 
-**1. Compile the Code**
+**2. Compile the Code**
 Open your terminal in the project folder and use the `g++` compiler to link all source files together:
 
 ```bash
@@ -47,7 +47,7 @@ g++ -O3 main.cpp graph.cpp fibonacci_heap.cpp reader.cpp \
     -o exec
 ```
 
-**2. Run the Program**
+**3. Run the Program**
 After compilation generates the exec file, you can run the program with the following command:
 
 ```bash
