@@ -9,6 +9,7 @@
 #include <ctime>
 #include "graph.h"
 #include "reader.h"
+#include "blossom5/PerfectMatching.h"
 
 using namespace std;
 using namespace std::chrono;
@@ -50,34 +51,50 @@ void generate_graph(const string& filename, int num_nodes = 2000) {
 }
 
 // ---------------------------------------------------------
-// Recursive Brute Force to find the Minimum Perfect Matching
+// Minimum Perfect Matching using Blossom V (Kolmogorov)
+// Complexity: O(n^3) - handles thousands of vertices efficiently
 // ---------------------------------------------------------
 int findMinMatching(vector<string> nodes, unordered_map<string, unordered_map<string, int>>& distMatrix) {
-    if (nodes.empty()) return 0;
-
-    int min_cost = INT_MAX;
-    string first = nodes[0]; // Take the first available node
+    int n = nodes.size();
     
-    // Try pairing 'first' with every other available node
-    for (size_t i = 1; i < nodes.size(); ++i) {
-        string second = nodes[i];
-        int pair_cost = distMatrix[first][second];
-        
-        // Create a list of nodes that are left after this pairing
-        vector<string> remaining_nodes;
-        for (size_t j = 1; j < nodes.size(); ++j) {
-            if (j != i) remaining_nodes.push_back(nodes[j]);
-        }
-        
-        // Recursively find the cost of pairing the remaining nodes
-        int total_cost = pair_cost + findMinMatching(remaining_nodes, distMatrix);
-        
-        if (total_cost < min_cost) {
-            min_cost = total_cost;
+    // Base case: no nodes to match
+    if (n == 0) return 0;
+    
+    // Blossom V requires even number of nodes for perfect matching
+    if (n % 2 != 0) {
+        throw runtime_error("Cannot find perfect matching with odd number of nodes");
+    }
+    
+    // Number of edges in a complete graph: n*(n-1)/2
+    int edgeCount = n * (n - 1) / 2;
+    
+    // Initialize Blossom V solver
+    // Parameters: (number of nodes, number of edges)
+    PerfectMatching pm(n, edgeCount);
+    
+    // Add all edges of the complete graph
+    // Blossom V uses integer indices, so we map node names to indices
+    for (int i = 0; i < n; i++) {
+        for (int j = i + 1; j < n; j++) {
+            int cost = distMatrix[nodes[i]][nodes[j]];
+            pm.AddEdge(i, j, cost);
         }
     }
     
-    return min_cost;
+    // Solve the minimum weight perfect matching problem
+    pm.Solve();
+    
+    // Calculate total cost by summing matched edge weights
+    int totalCost = 0;
+    for (int i = 0; i < n; i++) {
+        int match = pm.GetMatch(i);
+        // Only count each edge once (when i < match)
+        if (i < match) {
+            totalCost += distMatrix[nodes[i]][nodes[match]];
+        }
+    }
+    
+    return totalCost;
 }
 
 // ---------------------------------------------------------
@@ -149,7 +166,7 @@ void calculate_non_eulerian(const Graph& g, bool use_fibonacci_heap) {
     // 3. Final calculation
     int final_cost = base_cost + extra_cost;
 
-    cout << "-> Base cost of all streets: " << base_cost << "\n";
+    cout << "\n-> Base cost of all streets: " << base_cost << "\n";
     cout << "-> Extra cost (duplicated paths): " << extra_cost << "\n";
     cout << "-------------------------------------------\n";
     cout << "FINAL POSTMAN COST: " << final_cost << "\n";
@@ -161,7 +178,7 @@ void calculate_non_eulerian(const Graph& g, bool use_fibonacci_heap) {
 // ---------------------------------------------------------
 int main() {
     Graph g;
-    string filename = "graphs/medium_graph_1.txt";
+    string filename = "graphs/medium_graph_2.txt";
 
     if (!loadFromFile(filename, g)) {
         cerr << "Error: Failed to load the graph." << "\n";

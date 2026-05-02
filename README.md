@@ -23,11 +23,28 @@ Example:
 
 ## How to Compile and Run
 
+**1. Download Blossom V (required for minimum matching)**
+
+```bash
+wget https://pub.ist.ac.at/~vnk/software/blossom5-v2.05.src.tar.gz
+tar -xzf blossom5-v2.05.src.tar.gz
+mv blossom5-v2.05.src blossom5
+```
+
 **1. Compile the Code**
 Open your terminal in the project folder and use the `g++` compiler to link all source files together:
 
 ```bash
-g++ main.cpp graph.cpp fibonacci_heap.cpp reader.cpp -o exec
+g++ -O3 main.cpp graph.cpp fibonacci_heap.cpp reader.cpp \
+    blossom5/PMinterface.cpp \
+    blossom5/PMmain.cpp \
+    blossom5/PMinit.cpp \
+    blossom5/PMshrink.cpp \
+    blossom5/PMexpand.cpp \
+    blossom5/PMduals.cpp \
+    blossom5/misc.cpp \
+    blossom5/MinCost/MinCost.cpp \
+    -o exec
 ```
 
 **2. Run the Program**
