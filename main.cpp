@@ -46,7 +46,6 @@ void generate_graph(const string& filename, int num_nodes = 2000) {
 
     file.close();
     cout << "Done! File '" << filename << "' generated successfully!\n";
-    cout << "All " << num_nodes << " nodes are odd-degree. Brute force matching is impossible here.\n";
     cout << "-----------------------------------\n\n";
 }
 
