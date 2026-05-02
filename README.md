@@ -27,7 +27,7 @@ Example:
 Open your terminal in the project folder and use the `g++` compiler to link all source files together:
 
 ```bash
-g++ main.cpp graph.cpp reader.cpp -o exec
+g++ main.cpp graph.cpp fibonacci_heap.cpp reader.cpp -o exec
 ```
 
 **2. Run the Program**
