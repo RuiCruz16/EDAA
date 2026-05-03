@@ -5,8 +5,10 @@ This project is a C++ implementation of the **Chinese Postman Problem (CPP)**, f
 ## Current File Structure
 * `main.cpp` - Application entry point.
 * `graph.h` / `graph.cpp` - `Graph` class representing the network using an adjacency list (supporting custom vertex names via Hash Map).
+* `fibonacci_heap.h` / `fibonacci_heap.cpp` - Fibonacci Heap implementation for optimized Dijkstra.
 * `reader.h` / `reader.cpp` - Dedicated module for reading and parsing text files.
-* `graphs/` - Directory containing all the graphs.
+* `graphs/` - Directory containing all test graphs.
+* `blossom5/` - Blossom V library (Kolmogorov) for minimum weight perfect matching.
 
 ## Test Graph Format (`.txt`)
 The program reads graphs from text files structured as follows:
