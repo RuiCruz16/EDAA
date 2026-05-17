@@ -35,10 +35,11 @@ void FibonacciHeap::insert(const std::string& vertex, int distance) {
     node_map[vertex] = node;
 
     if (min_node != nullptr) {
-        node->left = min_node;
-        node->right = min_node->right;
-        min_node->right = node;
-        node->right->left = node;
+        // Correct splice order: save old neighbour reference before overwriting
+        node->left            = min_node;
+        node->right           = min_node->right;   // (1) save original right neighbour
+        min_node->right->left = node;              // (2) old neighbour points back to node
+        min_node->right       = node;              // (3) only now update min_node->right
 
         if (node->distance < min_node->distance) {
             min_node = node;
@@ -54,20 +55,26 @@ std::pair<std::string, int> FibonacciHeap::extract_min() {
     FibNode* z = min_node;
     if (z == nullptr) return {"", -1};
 
+    // Snapshot all children before touching any pointers,
+    // because splicing modifies left/right and breaks the original child list traversal
     if (z->child != nullptr) {
-        FibNode* child = z->child;
+        std::vector<FibNode*> children;
+        FibNode* c = z->child;
         do {
-            FibNode* next_child = child->right;
-            // Add the children of the removed node to the root list
-            child->left = min_node;
-            child->right = min_node->right;
-            min_node->right = child;
-            child->right->left = child;
-            child->parent = nullptr;
-            child = next_child;
-        } while (child != z->child);
+            children.push_back(c);
+            c = c->right;
+        } while (c != z->child);
+
+        for (FibNode* child : children) {
+            child->right          = min_node->right;
+            child->left           = min_node;
+            min_node->right->left = child;
+            min_node->right       = child;
+            child->parent         = nullptr;
+        }
     }
 
+    // Remove z from the root list
     z->left->right = z->right;
     z->right->left = z->left;
 
@@ -75,14 +82,14 @@ std::pair<std::string, int> FibonacciHeap::extract_min() {
         min_node = nullptr;
     } else {
         min_node = z->right;
-        consolidate(); // The great cleanup and tree reorganization!
+        consolidate();
     }
 
     total_nodes--;
-    
+
     std::string vertex_name = z->vertex;
-    int dist = z->distance;
-    
+    int         dist        = z->distance;
+
     node_map.erase(vertex_name);
     delete z;
 
@@ -91,19 +98,23 @@ std::pair<std::string, int> FibonacciHeap::extract_min() {
 
 // The great advantage of Fibonacci Heap over binary heap: amortized O(1)
 void FibonacciHeap::decrease_key(const std::string& vertex, int new_distance) {
-    if (!contains(vertex)) return;
+    // Safe lookup — operator[] would insert a null entry if the key is missing
+    auto it = node_map.find(vertex);
+    if (it == node_map.end()) return;
 
-    FibNode* x = node_map[vertex];
-    if (new_distance > x->distance) return; // Only update if it's a better shortcut
+    FibNode* x = it->second;
+    if (new_distance >= x->distance) return; // Only process genuine improvements
 
     x->distance = new_distance;
-    FibNode* y = x->parent;
+    FibNode* y  = x->parent;
 
+    // If heap order is violated, cut x and do cascading cuts up the tree
     if (y != nullptr && x->distance < y->distance) {
         cut(x, y);
         cascading_cut(y);
     }
 
+    // Update the global minimum pointer if needed
     if (x->distance < min_node->distance) {
         min_node = x;
     }
@@ -164,48 +175,56 @@ void FibonacciHeap::link(FibNode* y, FibNode* x) {
 }
 
 void FibonacciHeap::consolidate() {
-    int max_degree = static_cast<int>(std::log2(total_nodes)) + 2;
-    std::vector<FibNode*> A(max_degree, nullptr);
+    // Upper bound on the maximum degree after consolidation.
+    // For a Fibonacci Heap of n nodes, max degree <= floor(log_φ(n))
+    // where φ = golden ratio ≈ 1.618. Adding 2 gives a safe margin.
+    int max_degree = static_cast<int>(
+        std::log(static_cast<double>(total_nodes + 1)) / std::log(1.618)
+    ) + 2;
 
+    std::vector<FibNode*> A(max_degree + 1, nullptr); // degree → tree root
+
+    // Snapshot of the root list before we modify it (link() changes pointers)
     std::vector<FibNode*> root_nodes;
-    FibNode* x = min_node;
-    if (x != nullptr) {
-        do {
-            root_nodes.push_back(x);
-            x = x->right;
-        } while (x != min_node);
-    }
+    FibNode* curr = min_node;
+    do {
+        root_nodes.push_back(curr);
+        curr = curr->right;
+    } while (curr != min_node);
 
+    // Merge trees of equal degree, smallest-distance root always wins
     for (FibNode* w : root_nodes) {
         FibNode* x = w;
-        int d = x->degree;
-        while (A[d] != nullptr) {
+        int d      = x->degree;
+
+        while (d <= max_degree && A[d] != nullptr) {  // guard: d <= max_degree
             FibNode* y = A[d];
-            if (x->distance > y->distance) {
-                std::swap(x, y);
-            }
-            link(y, x);
+            if (x->distance > y->distance) std::swap(x, y); // x keeps the min
+            link(y, x); // y becomes a child of x
             A[d] = nullptr;
             d++;
         }
-        A[d] = x;
+
+        if (d <= max_degree) A[d] = x;
     }
 
+    // Rebuild the root list from the degree-indexed array and locate the new minimum
     min_node = nullptr;
-    for (int i = 0; i < max_degree; i++) {
-        if (A[i] != nullptr) {
-            if (min_node == nullptr) {
+    for (int i = 0; i <= max_degree; i++) {
+        if (A[i] == nullptr) continue;
+        if (min_node == nullptr) {
+            // First tree — start a fresh circular list
+            min_node        = A[i];
+            min_node->left  = min_node;
+            min_node->right = min_node;
+        } else {
+            // Append A[i] to the right of min_node
+            A[i]->right              = min_node->right;
+            A[i]->left               = min_node;
+            min_node->right->left    = A[i];
+            min_node->right          = A[i];
+            if (A[i]->distance < min_node->distance) {
                 min_node = A[i];
-                min_node->left = min_node;
-                min_node->right = min_node;
-            } else {
-                A[i]->left = min_node;
-                A[i]->right = min_node->right;
-                min_node->right = A[i];
-                A[i]->right->left = A[i];
-                if (A[i]->distance < min_node->distance) {
-                    min_node = A[i];
-                }
             }
         }
     }

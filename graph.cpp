@@ -126,46 +126,47 @@ std::unordered_map<std::string, int> Graph::dijkstra_priority_queue(const std::s
 
 std::unordered_map<std::string, int> Graph::dijkstra_fibonacci_heap(const std::string& start) const {
     std::unordered_map<std::string, int> distances;
-    FibonacciHeap fh; // Instantiate our logistic center
-    
-    // 1. Initialize distances and insert ALL nodes into the Fibonacci Heap
+
+    // 1. Initialise all distances to infinity
     for (const auto& pair : vertices) {
-        if (pair.first == start) {
-            distances[pair.first] = 0;
-            fh.insert(pair.first, 0);
-        } else {
-            distances[pair.first] = INT_MAX;
-            fh.insert(pair.first, INT_MAX);
-        }
+        distances[pair.first] = INT_MAX;
     }
+    distances[start] = 0;
 
-    // 2. Main Loop
+    // 2. Only insert the source — the heap stays small until nodes are discovered.
+    //    Neighbours enter via insert() on first discovery and are updated via
+    //    decrease_key() on subsequent relaxations. No stale duplicates ever exist.
+    FibonacciHeap fh;
+    fh.insert(start, 0);
+
+    // 3. Main loop
     while (!fh.is_empty()) {
-        // Extracting the minimum triggers the Fibonacci internal consolidation
-        auto min_pair = fh.extract_min();
-        std::string current_vertex = min_pair.first;
-        int current_dist = min_pair.second;
+        auto [current_vertex, current_dist] = fh.extract_min();
 
-        // If the shortest distance is infinity, the remaining nodes are unreachable
+        // All remaining nodes are unreachable
         if (current_dist == INT_MAX) break;
 
-        // 3. Explore neighboring streets
+        // Stale extraction guard (cannot occur with proper decrease_key, but
+        // provides safety against any edge case)
+        if (current_dist > distances[current_vertex]) continue;
+
+        // 4. Relax all outgoing edges
         for (const auto& edge : vertices.at(current_vertex).edges) {
-            // Prevent mathematical overflow when adding to INT_MAX
-            if (current_dist != INT_MAX) {
-                int new_dist = current_dist + edge.weight;
-                
-                // 4. If we find a shortcut, use the magic Decrease Key operation!
-                if (new_dist < distances[edge.to]) {
-                    distances[edge.to] = new_dist;
-                    
-                    // Instead of pushing a new duplicated node (like priority_queue does),
-                    // Fibonacci just updates the existing one and moves it in O(1) time!
-                    fh.decrease_key(edge.to, new_dist); 
+            int new_dist = current_dist + edge.weight;
+
+            if (new_dist < distances[edge.to]) {
+                distances[edge.to] = new_dist;
+
+                if (fh.contains(edge.to)) {
+                    // Node already in heap: O(1) amortized key update
+                    fh.decrease_key(edge.to, new_dist);
+                } else {
+                    // First time we reach this neighbour: insert it
+                    fh.insert(edge.to, new_dist);
                 }
             }
         }
     }
-    
+
     return distances;
 }

@@ -178,7 +178,7 @@ void calculate_non_eulerian(const Graph& g, bool use_fibonacci_heap) {
 // ---------------------------------------------------------
 int main() {
     Graph g;
-    string filename = "graphs/medium_graph_2.txt";
+    string filename = "graphs/small_graph_1.txt";
 
     if (!loadFromFile(filename, g)) {
         cerr << "Error: Failed to load the graph." << "\n";
@@ -198,7 +198,7 @@ int main() {
         }
     }
 
-    bool use_fibonacci_heap = false;
+    bool use_fibonacci_heap = true;
 
     if (is_euler_circuit) {
         cout << "Status: Eulerian Circuit (All vertices have an even degree).\n";
