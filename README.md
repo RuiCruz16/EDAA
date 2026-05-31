@@ -55,3 +55,15 @@ After compilation generates the exec file, you can run the program with the foll
 ```bash
 ./exec
 ```
+
+# Quadtree Problem
+
+This section of the repository contains the real-time 2D spatial partitioning simulation, demonstrating the algorithmic efficiency of the Quadtree data structure in resolving collision detection bottlenecks.
+
+## How to Run
+
+Ensure you have Python 3 installed (along with any required libraries like `pygame`). You can launch the visualization and telemetry dashboard by executing the following command in your terminal:
+
+```bash
+python3 quadtree_visualization.py
+```

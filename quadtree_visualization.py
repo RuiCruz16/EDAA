@@ -1,8 +1,4 @@
 """
-Quadtree Collision Detection Visualization
--------------------------------------------
-Demonstrates the performance difference between Brute Force O(n^2) and Quadtree O(n log n).
-
 Requirements: pip install pygame
 """
 
@@ -13,7 +9,7 @@ import time
 from dataclasses import dataclass
 from typing import List, Optional
 
-# ============== CONFIGURATIONS ==============
+# CONFIGURATIONS
 WIDTH, HEIGHT = 1200, 800
 FPS_CAP = 60
 INITIAL_BALLS = 200
@@ -31,7 +27,7 @@ SUCCESS_COLOR = (100, 255, 150)
 UI_PANEL_COLOR = (20, 20, 35)
 UI_BORDER_COLOR = (50, 50, 70)
 
-# ============== UI COMPONENTS ==============
+# UI COMPONENTS
 
 class Button:
     def __init__(self, x: int, y: int, w: int, h: int, text: str):
@@ -89,7 +85,7 @@ class InputBox:
         # Center vertically, offset slightly horizontally
         screen.blit(text_surf, (self.rect.x + 8, self.rect.y + (self.rect.h - text_surf.get_height()) // 2))
 
-# ============== GEOMETRY & QUADTREE ==============
+# GEOMETRY & QUADTREE
 
 @dataclass
 class Ball:
@@ -228,7 +224,7 @@ class Quadtree:
             self.southwest.draw(screen)
             self.southeast.draw(screen)
 
-# ============== COLLISION LOGIC ==============
+# COLLISION LOGIC
 
 def check_collision(b1: Ball, b2: Ball) -> bool:
     """Checks for circular overlap between two balls."""
@@ -345,7 +341,7 @@ def create_balls(n: int) -> List[Ball]:
         balls.append(Ball(x, y, vx, vy, radius, color))
     return balls
 
-# ============== MAIN LOOP ==============
+# MAIN LOOP
 
 def main():
     pygame.init()
@@ -449,7 +445,7 @@ def main():
         if brute_force_checks > 0 and use_quadtree:
             reduction = ((brute_force_checks - avg_checks) / brute_force_checks * 100)
         
-        # ============== DRAW UI DASHBOARD ==============
+        # DRAW UI DASHBOARD
         panel_rect = pygame.Rect(10, 10, 300, 360)
         pygame.draw.rect(screen, UI_PANEL_COLOR, panel_rect, border_radius=8)
         pygame.draw.rect(screen, UI_BORDER_COLOR, panel_rect, 2, border_radius=8)
